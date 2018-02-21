@@ -37,6 +37,7 @@ const start = async (app, settings) => {
                 me: User
                 movie(_id: ID!): Movie
                 movies: [Movie]
+                allMovies(filter: String!): [Movie]
                 comment(_id: ID!): Comment
                 rating(_id: ID!): Rating
             }
@@ -101,6 +102,10 @@ const start = async (app, settings) => {
                 },
                 movies: async (root, args, context) => {
                     return (await Movies.find({}, {sort: { createdAt: -1}}).toArray()).map(prepare)
+                },
+                allMovies: async (_, {filter}) => {
+                  const query = JSON.parse(filter)
+                  return (await Movies.find(query).toArray()).map(prepare)
                 },
                 comment: async (root, {_id}) => {
                     return prepare(await Comments.findOne(ObjectId(_id)))

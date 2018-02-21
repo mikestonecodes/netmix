@@ -9,16 +9,28 @@ import Img from 'react-image'
 import ReactPlayer from 'react-player'
 import { CSSGrid, measureItems, makeResponsive,layout } from 'react-stonecutter';
 import Link from 'next/link'
+import SearchInput, {createFilter} from 'react-search-input'
+import {Flex, Box} from 'grid-styled'
+import Ratings from 'react-ratings-declarative';
 const Grid = makeResponsive(measureItems(CSSGrid, { measureImages: true }), {
   maxWidth: 1920,
   minPadding: 100
 });
 
-export default withPage(() => (
+export default withPage(({url: {query: {refetch}}}) => (
     <Layout title="Movies" page="dashboard">
-        <div className="container">
-          <Movies/>
+
+        <div className="">
+          <Movies refetch={refetch}/>
+          <style jsx global>{`
+            .grid{
+          list-style: none;
+    padding: 0;
+    margin: 0 auto;
+  }
+  `}</style>
         </div>
+
     </Layout>
 ))
 
@@ -29,6 +41,8 @@ const MovieQuery = gql`
         title
         imageLink
         avgRating
+        releaseDay
+
     }
     }
 `
@@ -45,24 +59,54 @@ class Movie extends React.Component {
 
     }
   }
-  /*  <CreateComment movieId={movie._id} onCreateComment={refetch}/>
-    <CreateRating movieId={movie._id} onCreateRating={refetch}/>
-    {movie.comments.map(comment => (
-        <div key={comment._id}>
-            <span>From: {comment.authorId}</span>
-            <div>
-                {comment.content}
-            </div>
-        </div>
-    ))}
-     */
 class MoviesComponent extends React.Component {
+  constructor (props) {
+   super(props)
+   this.state = {
+     searchTerm: '',
+     rating:0
+   }
+   this.searchUpdated = this.searchUpdated.bind(this)
+   this.ratingUpdated = this.ratingUpdated.bind(this)
+ }
+  searchUpdated (term) {
+ this.setState({searchTerm: term})
+}
+ratingUpdated (rate) {
+this.setState({rating: rate})
+}
     render() {
         const {data: {loading, movies, refetch}} = this.props
+        if(movies){
+        var KEYS_TO_FILTERS = ['title','releaseDay']
+        var filteredMovies = movies.filter(createFilter(this.state.searchTerm, KEYS_TO_FILTERS))
+         filteredMovies = filteredMovies.filter( (a)=>(a.avgRating | 0) >= (this.state.rating==1?0:this.state.rating) )
+        }
         if (loading) {
             return <p>Loading...</p>
         }
         return <div>
+        <Flex flexWrap='wrap' alignItems='center' style={{
+            color: "rgba(255, 255, 255, 0.9)",
+            backgroundColor: "#383838",
+            paddingLeft: "10px",
+            paddingRight: "2%",
+            marginBottom: "20px",
+            borderBottom: "3px solid",
+            minHeight:"70px"
+          }}>
+
+          <Box>
+          <SearchInput type="search" className="search-input" onChange={this.searchUpdated} />
+          </Box>
+          <Box p={2} flex='none' style={{paddingTop:'20px'}} >
+                      </Box>
+          <Box ml={"auto"} >
+        <CreateRating  onCreateRatingComponent={this.ratingUpdated} />
+
+          </Box>
+        </Flex>
+
 
 
             <Grid
@@ -77,7 +121,7 @@ class MoviesComponent extends React.Component {
 
                   className="grid"
                   >
-                {movies && movies.map(movie => (
+                {filteredMovies && filteredMovies.map(movie => (
                     <div key={movie._id}  className="grid-item">
                       <Movie movie={movie}/>
                     </div>
@@ -88,103 +132,6 @@ class MoviesComponent extends React.Component {
 }
 const Movies = graphql(MovieQuery)(MoviesComponent)
 
-const CreateMovieQuery = gql`
-    mutation($title: String!, $content: String!,$imageLink: String!,$releaseDay: String!,$trailerVideoLink:String!) {
-    createMovie(title: $title, content: $content,imageLink:$imageLink,releaseDay:$releaseDay,trailerVideoLink:$trailerVideoLink) {
-        _id
-    }
-    }
-`
-class CreateMovieComponent extends React.Component {
-    render() {
-        const {user, mutate, onCreateMovie} = this.props
-        if (!user) {
-            return <p><a href={`/login?next=/blog`}>log in to write a movie</a>.</p>
-        }
-        return <form onSubmit={e => {
-            e.preventDefault()
-            mutate({
-                variables: {
-                    title: this.title.value,
-                    content: this.content.value,
-                    imageLink: this.imageLink.value,
-                    releaseDay: this.releaseDay.value,
-                    trailerVideoLink: this.trailerVideoLink.value
-                }
-            }).then(({data}) => {
-                if (onCreateMovie) {
-                    onCreateMovie()
-                }
-            }).catch(e => {
-                console.error(e)
-            })
-        }}>
-            <h2>Write movie</h2>
-            <div className="form-grouip">
-                <label htmlFor="title">Title</label>
-                <input
-                    className="form-control"
-                    ref={ref => {
-                        this.title = ref
-                    }}
-                />
-            </div>
-            <div className="form-group">
-                <label htmlFor="content">Content</label>
-                <textarea
-                    className="form-control"
-                    ref={ref => {
-                        this.content = ref
-                    }}
-                />
-            </div>
-            <div className="form-group">
-                <label htmlFor="content">image Link</label>
-                <textarea
-                    className="form-control"
-                    ref={ref => {
-                        this.imageLink = ref
-                    }}
-                />
-            </div>
-            <div className="form-group">
-                <label htmlFor="content">Release Day</label>
-                <textarea
-                    className="form-control"
-                    ref={ref => {
-                        this.releaseDay = ref
-                    }}
-                />
-            </div>
-            <div className="form-group">
-                <label htmlFor="content">Trailer Video Link</label>
-                <textarea
-                    className="form-control"
-                    ref={ref => {
-                        this.trailerVideoLink = ref
-                    }}
-                />
-            </div>
-
-
-            <button>Create</button>
-        </form>
-    }
-}
-const CreateMovie = compose(
-    withUser,
-    graphql(CreateMovieQuery)
-)(CreateMovieComponent)
-
-
-
-const CreateCommentQuery = gql`
-    mutation($movieId: ID!, $content: String!) {
-    createComment(movieId: $movieId, content: $content) {
-        _id
-    }
-    }
-`
 const CreateRatingQuery = gql`
     mutation($movieId: ID!, $content: String!) {
     createRating(movieId: $movieId, rate: $content) {
@@ -192,76 +139,32 @@ const CreateRatingQuery = gql`
     }
     }
 `
-class CreateCommentComponent extends React.Component {
-    render() {
-        const {user, mutate, onCreateComment, movieId} = this.props
-        if (!user) {
-            return <p><a href={`/login?next=/blog`}>log in to comment</a>.</p>
-        }
-        return <form onSubmit={e => {
-            e.preventDefault()
-            mutate({
-                variables: {
-                    movieId,
-                    content: this.content.value
-                }
-            }).then(({data}) => {
-                if (onCreateComment) {
-                    onCreateComment()
-                }
-            }).catch(e => {
-                console.error(e)
-            })
-        }}>
-            <div className="form-group">
-                <textarea
-                    className="form-control"
-                    ref={ref => {
-                        this.content = ref
-                    }}
-                />
-            </div>
-            <button>Comment</button>
-        </form>
-    }
-}
+
 class CreateRatingComponent extends React.Component {
+  state = {
+      rating: 0
+  };
+  rate = (newRating) => {
+      console.log("WTF")
+        this.setState({
+          rating: newRating
+          });
+          this.onCreateRatingComponent(newRating)
+  }
     render() {
-        const {user, mutate, onCreateRatingComponent, movieId} = this.props
-        if (!user) {
-            return <p><a href={`/login?next=/blog`}>log in to comment</a>.</p>
-        }
-        return <form onSubmit={e => {
-            e.preventDefault()
-            mutate({
-                variables: {
-                    movieId,
-                    content: this.content.value
-                }
-            }).then(({data}) => {
-                if (onCreateRatingComponent) {
-                    onCreateRatingComponent()
-                }
-            }).catch(e => {
-                console.error(e)
-            })
-        }}>
-            <div className="form-group">
-                <textarea
-                    className="form-control"
-                    ref={ref => {
-                        this.content = ref
-                    }}
-                />
-            </div>
-            <button>Rating</button>
-        </form>
+      const {user, mutate, onCreateRatingComponent, movieId} = this.props
+      this.onCreateRatingComponent=onCreateRatingComponent
+      return <div>
+        <Ratings rating={this.state.rating}   widgetSpacings="5px" widgetRatedColors={"rgb(242,218,92)"} widgetDimensions="20px" changeRating={this.rate}>
+          <Ratings.Widget/>
+          <Ratings.Widget/>
+          <Ratings.Widget/>
+          <Ratings.Widget/>
+        </Ratings>
+      </div>
+
     }
 }
-const CreateComment = compose(
-    withUser,
-    graphql(CreateCommentQuery)
-)(CreateCommentComponent)
 
 const CreateRating = compose(
     withUser,

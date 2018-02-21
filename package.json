@@ -30,6 +30,7 @@
     "graphql-server-express": "^1.2.0",
     "graphql-tag": "^2.5.0",
     "graphql-tools": "^2.10.0",
+    "grid-styled": "^3.2.0",
     "mailcomposer": "^4.0.2",
     "mailgun-js": "^0.13.1",
     "mongodb": "^2.2.33",
@@ -49,7 +50,10 @@
     "react-image": "^1.3.1",
     "react-player": "^1.1.2",
     "react-rating": "^1.0.5",
+    "react-ratings-declarative": "3.0.1",
+    "react-search-input": "^0.11.3",
     "react-stonecutter": "^0.3.9",
+    "reflexbox": "^3.0.1",
     "staart": "2.0.0"
   }
 }

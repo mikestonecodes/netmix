@@ -9,37 +9,9 @@ import Img from 'react-image'
 import ReactPlayer from 'react-player'
 import { CSSGrid, measureItems, makeResponsive } from 'react-stonecutter';
 import Router from 'next/router'
-const Grid = makeResponsive(measureItems(CSSGrid), {
-  maxWidth: 1920,
-  minPadding: 100
-});
-let movieId=""
+
 export default withPage(({url: {query: {id}}}) => {
-  const MovieQuery = gql`
-      query {
-      movie(_id:"${id}") {
-          _id
-          authorId
-          title
-          content
-          imageLink
-          releaseDay
-          trailerVideoLink
-          avgRating
-          comments {
-          _id
-          authorId
-          content
-          }
-          ratings {
-          _id
-          authorId
-          rate
-          }
-      }
-      }
-  `
-  const Movies = graphql(MovieQuery)(MoviesComponent)
+
   return(
 
     <Layout title="Movies" page="dashboard">
@@ -52,41 +24,6 @@ export default withPage(({url: {query: {id}}}) => {
 
 
 
-class Movie extends React.Component {
-    render() {
-        const {movie} = this.props
-        return<div>
-                <Img width={'150px'} src={[movie.imageLink,"https://images.template.net/wp-content/uploads/2017/02/17221912/Printable-Blank-Movie-Poster.jpg"]} />
-            </div>
-
-    }
-  }
-  /*  <CreateComment movieId={movie._id} onCreateComment={refetch}/>
-    <CreateRating movieId={movie._id} onCreateRating={refetch}/>
-    {movie.comments.map(comment => (
-        <div key={comment._id}>
-            <span>From: {comment.authorId}</span>
-            <div>
-                {comment.content}
-            </div>
-        </div>
-    ))}
-     */
-class MoviesComponent extends React.Component {
-    render() {
-        const {data: {loading, movie, refetch}} = this.props
-        if (loading) {
-            return <p>Loading...</p>
-        }
-        return <div>
-            <CreateMovie onCreateMovie={refetch}/>
-            <h2>{movie.title}</h2>
-            <Img width={'400px'} src={[movie.imageLink,"https://images.template.net/wp-content/uploads/2017/02/17221912/Printable-Blank-Movie-Poster.jpg"]} />
-
-        </div>
-    }
-}
-
 const CreateMovieQuery = gql`
     mutation($title: String!, $content: String!,$imageLink: String!,$releaseDay: String!,$trailerVideoLink:String!) {
     createMovie(title: $title, content: $content,imageLink:$imageLink,releaseDay:$releaseDay,trailerVideoLink:$trailerVideoLink) {
@@ -98,7 +35,7 @@ class CreateMovieComponent extends React.Component {
     render() {
         const {user, mutate, onCreateMovie} = this.props
         if (!user) {
-            return <p><a href={`/login?next=/blog`}>log in to write a movie</a>.</p>
+            return <p><a href={`/login?next=/`}>log in to add a movie</a>.</p>
         }
         return <form onSubmit={e => {
             e.preventDefault()
@@ -118,8 +55,8 @@ class CreateMovieComponent extends React.Component {
                 console.error(e)
             })
         }}>
-            <h2>Write movie</h2>
-            <div className="form-grouip">
+            <h2>Add movie</h2>
+            <div className="form-group">
                 <label htmlFor="title">Title</label>
                 <input
                     className="form-control"
@@ -174,95 +111,3 @@ const CreateMovie = compose(
     withUser,
     graphql(CreateMovieQuery)
 )(CreateMovieComponent)
-
-
-
-const CreateCommentQuery = gql`
-    mutation($movieId: ID!, $content: String!) {
-    createComment(movieId: $movieId, content: $content) {
-        _id
-    }
-    }
-`
-const CreateRatingQuery = gql`
-    mutation($movieId: ID!, $content: String!) {
-    createRating(movieId: $movieId, rate: $content) {
-        _id
-    }
-    }
-`
-class CreateCommentComponent extends React.Component {
-    render() {
-        const {user, mutate, onCreateComment, movieId} = this.props
-        if (!user) {
-            return <p><a href={`/login?next=/blog`}>log in to comment</a>.</p>
-        }
-        return <form onSubmit={e => {
-            e.preventDefault()
-            mutate({
-                variables: {
-                    movieId,
-                    content: this.content.value
-                }
-            }).then(({data}) => {
-                if (onCreateComment) {
-                    onCreateComment()
-                }
-            }).catch(e => {
-                console.error(e)
-            })
-        }}>
-            <div className="form-group">
-                <textarea
-                    className="form-control"
-                    ref={ref => {
-                        this.content = ref
-                    }}
-                />
-            </div>
-            <button>Comment</button>
-        </form>
-    }
-}
-class CreateRatingComponent extends React.Component {
-    render() {
-        const {user, mutate, onCreateRatingComponent, movieId} = this.props
-        if (!user) {
-            return <p><a href={`/login?next=/blog`}>log in to comment</a>.</p>
-        }
-        return <form onSubmit={e => {
-            e.preventDefault()
-            mutate({
-                variables: {
-                    movieId,
-                    content: this.content.value
-                }
-            }).then(({data}) => {
-                if (onCreateRatingComponent) {
-                    onCreateRatingComponent()
-                }
-            }).catch(e => {
-                console.error(e)
-            })
-        }}>
-            <div className="form-group">
-                <textarea
-                    className="form-control"
-                    ref={ref => {
-                        this.content = ref
-                    }}
-                />
-            </div>
-            <button>Rating</button>
-        </form>
-    }
-}
-const CreateComment = compose(
-    withUser,
-    graphql(CreateCommentQuery)
-)(CreateCommentComponent)
-
-const CreateRating = compose(
-    withUser,
-    graphql(CreateRatingQuery)
-)(CreateRatingComponent)
