@@ -1,11 +1,12 @@
-# A Staart example boilerplate
+live demo:
+http://mikestonecodes.com:3000/
 
-Get this folder to start your own project.
+this project uses next.js
 
-Copy `settings.dist.js` to `settings.js` and adapt to your needs.
+dev:
+npm run dev
 
-Copy `public-settings.dist.js` to `public-settings.js` and adapt to your needs.
-
-Build: `yarn`
-
-Dev: `yarn dev`
+build:
+npm install
+npx next build
+npx next start (optional -p for port)
